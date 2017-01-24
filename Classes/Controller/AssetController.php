@@ -1,5 +1,5 @@
 <?php
-namespace Neos\Media\Browser\Controller\Module\Management;
+namespace Neos\Media\Browser\Controller;
 
 /*
  * This file is part of the Neos.Media.Browser package.
@@ -11,13 +11,13 @@ namespace Neos\Media\Browser\Controller\Module\Management;
  * source code.
  */
 
-use Doctrine\Common\Persistence\Proxy as DoctrineProxy;
-use Doctrine\ORM\EntityNotFoundException;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\Error\Messages\Error;
 use Neos\Error\Messages\Message;
 use Neos\Flow\Annotations as Flow;
+use Doctrine\Common\Persistence\Proxy as DoctrineProxy;
+use Doctrine\ORM\EntityNotFoundException;
+use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\Flow\I18n\Translator;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Mvc\Exception\InvalidArgumentValueException;
@@ -26,10 +26,10 @@ use Neos\Flow\Mvc\View\ViewInterface;
 use Neos\Flow\Package\PackageManagerInterface;
 use Neos\Flow\Property\TypeConverter\PersistentObjectConverter;
 use Neos\Flow\ResourceManagement\PersistentResource;
-use Neos\FluidAdaptor\View\TemplateView;
-use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\AssetCollection;
 use Neos\Media\Domain\Model\AssetInterface;
+use Neos\FluidAdaptor\View\TemplateView;
+use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\Tag;
 use Neos\Media\Domain\Repository\AssetCollectionRepository;
 use Neos\Media\Domain\Repository\AssetRepository;
@@ -39,7 +39,7 @@ use Neos\Media\Domain\Repository\ImageRepository;
 use Neos\Media\Domain\Repository\TagRepository;
 use Neos\Media\Domain\Repository\VideoRepository;
 use Neos\Media\Domain\Service\AssetService;
-use Neos\Media\Domain\Session\BrowserState;
+use Neos\Media\Browser\Domain\Session\BrowserState;
 use Neos\Media\TypeConverter\AssetInterfaceConverter;
 use Neos\Neos\Controller\BackendUserTranslationTrait;
 use Neos\Neos\Controller\CreateContentContextTrait;
@@ -48,9 +48,8 @@ use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\ContentDimensionPresetSourceInterface;
 use Neos\Neos\Service\UserService;
-use Neos\Utility\Files;
 use Neos\Utility\MediaTypes;
-use Neos\Utility\TypeHandling;
+use Neos\Utility\Files;
 
 /**
  * Controller for asset handling
@@ -460,6 +459,7 @@ class AssetController extends ActionController
      *
      * @param Asset $asset
      * @param Tag $tag
+     * @return void
      */
     public function tagAssetAction(Asset $asset, Tag $tag)
     {
@@ -476,6 +476,7 @@ class AssetController extends ActionController
      *
      * @param Asset $asset
      * @param AssetCollection $assetCollection
+     * @return void
      */
     public function addAssetToCollectionAction(Asset $asset, AssetCollection $assetCollection)
     {
@@ -590,32 +591,19 @@ class AssetController extends ActionController
     /**
      * Delete an asset
      *
-     * @param \Neos\Media\Domain\Model\Asset $asset
+     * @param Asset $asset
      * @return void
      */
-    public function deleteAction(\Neos\Media\Domain\Model\Asset $asset)
+    public function deleteAction(Asset $asset)
     {
-        $relationMap = [];
-        $relationMap[TypeHandling::getTypeForValue($asset)] = [$this->persistenceManager->getIdentifierByObject($asset)];
-
-        if ($asset instanceof \Neos\Media\Domain\Model\Image) {
-            foreach ($asset->getVariants() as $variant) {
-                $type = TypeHandling::getTypeForValue($variant);
-                if (!isset($relationMap[$type])) {
-                    $relationMap[$type] = [];
-                }
-                $relationMap[$type][] = $this->persistenceManager->getIdentifierByObject($variant);
-            }
-        }
-
-        $relatedNodes = $this->nodeDataRepository->findNodesByRelatedEntities($relationMap);
-        if (count($relatedNodes) > 0) {
-            $this->addFlashMessage('Asset could not be deleted, because there are still Nodes using it.', '', Message::SEVERITY_WARNING, [], 1412422767);
+        $usageReferences = $this->assetService->getUsageReferences($asset);
+        if (count($usageReferences) > 0) {
+            $this->addFlashMessage('deleteRelatedNodes', '', Message::SEVERITY_WARNING, [], 1412422767);
             $this->redirect('index');
         }
 
         $this->assetRepository->remove($asset);
-        $this->addFlashMessage(sprintf('Asset "%s" has been deleted.', $asset->getLabel()), null, null, [], 1412375050);
+        $this->addFlashMessage('assetHasBeenDeleted', '', Message::SEVERITY_OK, [$asset->getLabel()], 1412375050);
         $this->redirect('index');
     }
 
@@ -636,7 +624,7 @@ class AssetController extends ActionController
         // Prevent replacement of image, audio and video by a different mimetype because of possible rendering issues.
         if (in_array($sourceMediaType['type'], ['image', 'audio', 'video']) && $sourceMediaType['type'] !== $replacementMediaType['type']) {
             $this->addFlashMessage(
-                'Resources of type "%s" can only be replaced by a similar resource. Got type "%s"',
+                'resourceCanOnlyBeReplacedBySimilarResource',
                 '',
                 Message::SEVERITY_WARNING,
                 [$sourceMediaType['type'], $resource->getMediaType()],
@@ -651,6 +639,7 @@ class AssetController extends ActionController
         } catch (\Exception $exception) {
             $this->addFlashMessage('couldNotReplaceAsset', '', Message::SEVERITY_OK, [], 1463472606);
             $this->forwardToReferringRequest();
+            return;
         }
 
         $this->addFlashMessage('assetHasBeenReplaced', '', Message::SEVERITY_OK, [htmlspecialchars($originalFilename)]);
@@ -730,7 +719,7 @@ class AssetController extends ActionController
     /**
      * Individual error FlashMessage that hides which action fails in production.
      *
-     * @return Message The flash message or FALSE if no flash message should be set
+     * @return Message|bool The flash message or FALSE if no flash message should be set
      */
     protected function getErrorFlashMessage()
     {
@@ -758,10 +747,10 @@ class AssetController extends ActionController
     public function addFlashMessage($messageBody, $messageTitle = '', $severity = Message::SEVERITY_OK, array $messageArguments = [], $messageCode = null)
     {
         if (is_string($messageBody)) {
-            $messageBody = $this->translator->translateById($messageBody, $messageArguments, null, null, 'Main', 'Neos.Media.Browser') ?: $messageBody;
+            $messageBody = $this->translator->translateById($messageBody, $messageArguments, null, null, 'Modules', 'Neos.Media.Browser') ?: $messageBody;
         }
 
-        $messageTitle = $this->translator->translateById($messageTitle, $messageArguments, null, null, 'Main', 'Neos.Media.Browser');
+        $messageTitle = $this->translator->translateById($messageTitle, $messageArguments, null, null, 'Modules', 'Neos.Media.Browser');
         parent::addFlashMessage($messageBody, $messageTitle, $severity, $messageArguments, $messageCode);
     }
 
