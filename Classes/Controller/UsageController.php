@@ -22,13 +22,13 @@ use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Media\Domain\Model\AssetInterface;
 use Neos\Media\Domain\Service\AssetService;
+use Neos\Neos\AssetUsage\Dto\AssetUsageReference;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\NodeTypeNameFactory;
 use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Neos\Neos\Security\Authorization\ContentRepositoryAuthorizationService;
 use Neos\Neos\Service\UserService;
-use Neos\Neos\AssetUsage\Dto\AssetUsageReference;
 
 /**
  * Controller for asset usage handling
@@ -117,13 +117,7 @@ class UsageController extends ActionController
             );
             $nodeType = $nodeAggregate ? $contentRepository->getNodeTypeManager()->getNodeType($nodeAggregate->nodeTypeName) : null;
 
-            $authenticatedAccount = $this->securityContext->getAccount();
-            if ($authenticatedAccount !== null) {
-                $workspacePermissions =  $this->contentRepositoryAuthorizationService->getWorkspacePermissionsForAccount($currentContentRepositoryId, $usage->getWorkspaceName(), $authenticatedAccount);
-            } else {
-                $workspacePermissions =  $this->contentRepositoryAuthorizationService->getWorkspacePermissionsForAnonymousUser($currentContentRepositoryId, $usage->getWorkspaceName());
-            }
-
+            $workspacePermissions = $this->contentRepositoryAuthorizationService->getWorkspacePermissions($currentContentRepositoryId, $usage->getWorkspaceName(), $this->securityContext->getRoles(), $this->userService->getBackendUser()?->getId());
             $workspace = $contentRepository->findWorkspaceByName($usage->getWorkspaceName());
 
             $inaccessibleRelation['nodeIdentifier'] = $usage->getNodeAggregateId()->value;
