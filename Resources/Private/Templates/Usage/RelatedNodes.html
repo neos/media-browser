@@ -39,18 +39,21 @@
                                    title="{neos:backend.translate(id: 'workspaces.personalWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}"
                                    data-neos-toggle="tooltip"></i>
                                 {neos:backend.translate(id: 'workspaces.personalWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}
+															  {inaccessibleRelation.label}
                             </f:case>
                             <f:case value="{inaccessibleRelation.workspace.privateWorkspace}">
                                 <i class="fas fa-shield"
                                    title="{neos:backend.translate(id: 'workspaces.privateWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}"
                                    data-neos-toggle="tooltip"></i>
                                 {neos:backend.translate(id: 'workspaces.privateWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}
+															{inaccessibleRelation.label}
                             </f:case>
                             <f:case value="{inaccessibleRelation.workspace.internalWorkspace}">
                                 <i class="fas fa-group"
                                    title="{neos:backend.translate(id: 'workspaces.internalWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}"
                                    data-neos-toggle="tooltip"></i>
                                 {neos:backend.translate(id: 'workspaces.internalWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}
+															{inaccessibleRelation.label}
                             </f:case>
                             <f:defaultCase>
                                 ---
