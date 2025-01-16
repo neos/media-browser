@@ -128,7 +128,7 @@ class UsageController extends ActionController
             $workspacePermissions = $this->contentRepositoryAuthorizationService->getWorkspacePermissions($currentContentRepositoryId, $usage->getWorkspaceName(), $this->securityContext->getRoles(), $this->userService->getBackendUser()?->getId());
             $workspace = $contentRepository->findWorkspaceByName($usage->getWorkspaceName());
 
-            $inaccessibleRelation['label'] = $this->getLabelForInaccessibleWorkspace($workspace);
+            $inaccessibleRelation['label'] = $workspace && $this->getLabelForInaccessibleWorkspace($workspace);
             $inaccessibleRelation['nodeIdentifier'] = $usage->getNodeAggregateId()->value;
             $inaccessibleRelation['workspaceName'] = $usage->getWorkspaceName()->value;
             $inaccessibleRelation['workspace'] = $workspace;
