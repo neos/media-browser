@@ -239,7 +239,7 @@ class AssetController extends ActionController
      * @return void
      * @throws FilesException
      */
-    public function indexAction($view = null, $sortBy = null, $sortDirection = null, $filter = null, $tagMode = self::TAG_GIVEN, Tag $tag = null, $searchTerm = null, $collectionMode = self::COLLECTION_GIVEN, AssetCollection $assetCollection = null, $assetSourceIdentifier = null): void
+    public function indexAction($view = null, $sortBy = null, $sortDirection = null, $filter = null, $tagMode = self::TAG_GIVEN, ?Tag $tag = null, $searchTerm = null, $collectionMode = self::COLLECTION_GIVEN, ?AssetCollection $assetCollection = null, $assetSourceIdentifier = null): void
     {
         $assetSourceIdentifier = $this->assetConstraints->applyToAssetSourceIdentifiers($assetSourceIdentifier);
 
@@ -861,7 +861,7 @@ class AssetController extends ActionController
      * @param string $sortDirection
      * @param string $filter
      */
-    private function applyViewOptionsToBrowserState(string $view = null, string $sortBy = null, string $sortDirection = null, string $filter = null): void
+    private function applyViewOptionsToBrowserState(?string $view = null, ?string $sortBy = null, ?string $sortDirection = null, ?string $filter = null): void
     {
         if (!empty($view)) {
             $this->browserState->set('view', $view);
@@ -897,7 +897,7 @@ class AssetController extends ActionController
      * @param Tag $tag
      * @param AssetCollection|null $activeAssetCollection
      */
-    private function applyTagToBrowserState(int $tagMode = null, Tag $tag = null, AssetCollection $activeAssetCollection = null): void
+    private function applyTagToBrowserState(?int $tagMode = null, ?Tag $tag = null, ?AssetCollection $activeAssetCollection = null): void
     {
         if ($tagMode === self::TAG_GIVEN && $tag !== null) {
             $this->browserState->set('activeTag', $tag);
@@ -936,7 +936,7 @@ class AssetController extends ActionController
      * @param int $collectionMode
      * @param AssetCollection $assetCollection
      */
-    private function applyAssetCollectionOptionsToBrowserState(int $collectionMode = null, AssetCollection $assetCollection = null): void
+    private function applyAssetCollectionOptionsToBrowserState(?int $collectionMode = null, ?AssetCollection $assetCollection = null): void
     {
         if ($collectionMode === self::COLLECTION_GIVEN && $assetCollection !== null) {
             $this->browserState->set('activeAssetCollection', $assetCollection);
