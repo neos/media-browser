@@ -49,6 +49,9 @@ window.addEventListener('DOMContentLoaded', () => {
 		const assets = document.querySelectorAll('[data-asset-identifier]');
 		assets.forEach((asset) => {
 			asset.addEventListener('click', (e) => {
+				if(e.target.closest('.neos-action')) {
+					return;
+				}
 				const assetLink = e.currentTarget;
 
 				const localAssetIdentifier = assetLink.dataset.localAssetIdentifier;
