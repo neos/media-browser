@@ -6,9 +6,9 @@
         <source>Drag and drop an asset on a collection / tag to add them to it.</source>
         <target state="final">Vedä ja pudota nimike kokoelmaan / tagiin lisätäksesi se siihen.</target>
       </trans-unit>
-      <trans-unit id="replace.options.keepOriginalFilename" xml:space="preserve" approved="yes">
+      <trans-unit id="replace.options.keepOriginalFilename" xml:space="preserve" approved="no">
         <source>Keep the filename "{0}"</source>
-        <target state="final">Säilytä tiedostonimi "{0}"</target>
+        <target state="translated">Säilytä tiedoston nimi "{0}"</target>
       </trans-unit>
       <trans-unit id="module.label" xml:space="preserve" approved="yes">
         <source>Media</source>
@@ -362,9 +362,9 @@
         <source>Metadata</source>
         <target state="final">Metatiedot</target>
       </trans-unit>
-      <trans-unit id="metadata.filename" xml:space="preserve" approved="yes">
+      <trans-unit id="metadata.filename" xml:space="preserve" approved="no">
         <source>Filename</source>
-        <target state="final">Tiedostonimi</target>
+        <target state="translated">Tiedoston nimi</target>
       </trans-unit>
       <trans-unit id="metadata.lastModified" xml:space="preserve" approved="yes">
         <source>Last modified (resource)</source>
