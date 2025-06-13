@@ -7,6 +7,10 @@
 	<f:for each="{settings.styles}" as="style">
 		<link rel="stylesheet" href="{f:uri.resource(path: style)}" />
 	</f:for>
+	<link
+		rel="neos-xliff"
+		href="{f:uri.action(action: 'xliffAsJson', arguments: {locale: '{neos:backend.interfaceLanguage()}', version: '{neos:backend.xliffCacheVersion()}'}, controller: 'Backend\Backend', package: 'Neos.Neos', absolute: true) -> f:format.raw()}"
+	/>
 </head>
 <body class="{settings.bodyClasses} media-browser-inspector">
 	<div id="neos-notification-container">
