@@ -41,7 +41,7 @@
                                 {neos:backend.translate(id: 'workspaces.personalWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}
                                 <f:if condition="{inaccessibleRelation.relevantWorkspaceMetadata}">
                                     <f:then>
-                                        ({inaccessibleRelation.relevantWorkspaceMetadata.owner.label})
+                                        (@{inaccessibleRelation.relevantWorkspaceMetadata.owner.label})
                                     </f:then>
                                 </f:if>
                             </f:case>

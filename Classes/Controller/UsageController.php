@@ -146,13 +146,14 @@ class UsageController extends ActionController
             $workspace = $contentRepository->findWorkspaceByName($usage->getWorkspaceName());
 
             $inaccessibleRelation['nodeIdentifier'] = $usage->getNodeAggregateId()->value;
-            $inaccessibleRelation['workspaceName'] = $workspace->workspaceName->value;
             $inaccessibleRelation['workspace'] = $workspace;
             $inaccessibleRelation['relevantWorkspaceMetadata'] = $this->getRelevantMetadataFromInaccessibleWorkspace($workspace);
             $inaccessibleRelation['nodeType'] = $nodeType;
             $inaccessibleRelation['accessible'] = $workspacePermissions->read;
 
-            if (!$workspacePermissions->read) {
+            // the workspace from `usage` might not be found, but we expect a given workspace in further function
+            // and user should have access to it, if not we have an inaccessible relation
+            if ($workspace === null || !$workspacePermissions->read) {
                 $inaccessibleRelations[] = $inaccessibleRelation;
                 continue;
             }
@@ -215,13 +216,13 @@ class UsageController extends ActionController
     }
 
     /**
-     * @return array{title: WorkspaceTitle, owner: User, personalWorkspace: bool, privateWorkspace: bool}
+     * @return array{title: WorkspaceTitle|null, owner: User|null, personalWorkspace: bool, privateWorkspace: bool}
      */
     private function getRelevantMetadataFromInaccessibleWorkspace(?Workspace $workspace): array
     {
         $structuredReturn = [
-            'title' => '',
-            'owner' => '',
+            'title' => null,
+            'owner' => null,
             'personalWorkspace' => false,
             'privateWorkspace' => false,
         ];
