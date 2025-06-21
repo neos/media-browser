@@ -16,6 +16,7 @@ namespace Neos\Media\Browser\Controller;
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindClosestNodeFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\Exception\WorkspaceDoesNotExist;
 use Neos\ContentRepository\Core\SharedModel\Workspace\Workspace;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
@@ -135,9 +136,13 @@ class UsageController extends ActionController
 
             $nodeAggregate =  $this->securityContext->withoutAuthorizationChecks(
                 function () use ($contentRepository, $usage) {
-                    return $contentRepository->getContentGraph($usage->getWorkspaceName())->findNodeAggregateById(
-                        $usage->getNodeAggregateId()
-                    );
+                    try {
+                        return $contentRepository->getContentGraph($usage->getWorkspaceName())->findNodeAggregateById(
+                            $usage->getNodeAggregateId()
+                        );
+                    } catch (WorkspaceDoesNotExist $e) {
+                        return null;
+                    }
                 }
             );
             $nodeType = $nodeAggregate ? $contentRepository->getNodeTypeManager()->getNodeType($nodeAggregate->nodeTypeName) : null;

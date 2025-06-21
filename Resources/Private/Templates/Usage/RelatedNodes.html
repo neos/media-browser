@@ -39,9 +39,9 @@
                                    title="{neos:backend.translate(id: 'workspaces.personalWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}"
                                    data-neos-toggle="tooltip"></i>
                                 {neos:backend.translate(id: 'workspaces.personalWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}
-                                <f:if condition="{inaccessibleRelation.relevantWorkspaceMetadata}">
+                                <f:if condition="{inaccessibleRelation.relevantWorkspaceMetadata.owner}">
                                     <f:then>
-                                        (@{inaccessibleRelation.relevantWorkspaceMetadata.owner.label})
+                                        (@{inaccessibleRelation.relevantWorkspaceMetadata.owner})
                                     </f:then>
                                 </f:if>
                             </f:case>
@@ -50,10 +50,17 @@
                                    title="{neos:backend.translate(id: 'workspaces.privateWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}"
                                    data-neos-toggle="tooltip"></i>
                                 {neos:backend.translate(id: 'workspaces.privateWorkspace', source: 'Main', package: 'Neos.Workspace.Ui')}
-                                <f:if condition="{inaccessibleRelation.relevantWorkspaceMetadata}">
+                                <f:if condition="{inaccessibleRelation.relevantWorkspaceMetadata.title} && {inaccessibleRelation.relevantWorkspaceMetadata.owner}">
                                     <f:then>
                                         ({inaccessibleRelation.relevantWorkspaceMetadata.title.value} | @{inaccessibleRelation.relevantWorkspaceMetadata.owner.label})
                                     </f:then>
+                                    <f:else>
+                                        <f:if condition="{inaccessibleRelation.relevantWorkspaceMetadata.title} && !{inaccessibleRelation.relevantWorkspaceMetadata.owner}">
+                                            <f:then>
+                                                ({inaccessibleRelation.relevantWorkspaceMetadata.title.value} | ---)
+                                            </f:then>
+                                        </f:if>
+                                    </f:else>
                                 </f:if>
                             </f:case>
                             <f:defaultCase>
