@@ -25,8 +25,15 @@ use Neos\Flow\Security\Context;
 use Neos\Media\Domain\Model\AssetInterface;
 use Neos\Media\Domain\Service\AssetService;
 use Neos\Neos\AssetUsage\Dto\AssetUsageReference;
+use Neos\Neos\Domain\Model\User;
+use Neos\Neos\Domain\Model\UserId;
+use Neos\Neos\Domain\Model\WorkspaceClassification;
+use Neos\Neos\Domain\Model\WorkspaceRole;
+use Neos\Neos\Domain\Model\WorkspaceRoleSubjectType;
+use Neos\Neos\Domain\Model\WorkspaceTitle;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\NodeTypeNameFactory;
+use Neos\Neos\Domain\Service\UserService as DomainUserService;
 use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Neos\Neos\Security\Authorization\ContentRepositoryAuthorizationService;
@@ -88,6 +95,12 @@ class UsageController extends ActionController
     protected $privilegeManager;
 
     /**
+     * @Flow\Inject
+     * @var DomainUserService
+     */
+    protected $domainUserService;
+
+    /**
      * Get Related Nodes for an asset
      *
      * @param AssetInterface $asset
@@ -120,18 +133,22 @@ class UsageController extends ActionController
 
             $contentRepository = $this->contentRepositoryRegistry->get($usage->getContentRepositoryId());
 
-            $nodeAggregate = $contentRepository->getContentGraph($usage->getWorkspaceName())->findNodeAggregateById(
-                $usage->getNodeAggregateId()
+            $nodeAggregate =  $this->securityContext->withoutAuthorizationChecks(
+                function () use ($contentRepository, $usage) {
+                    return $contentRepository->getContentGraph($usage->getWorkspaceName())->findNodeAggregateById(
+                        $usage->getNodeAggregateId()
+                    );
+                }
             );
             $nodeType = $nodeAggregate ? $contentRepository->getNodeTypeManager()->getNodeType($nodeAggregate->nodeTypeName) : null;
 
             $workspacePermissions = $this->contentRepositoryAuthorizationService->getWorkspacePermissions($currentContentRepositoryId, $usage->getWorkspaceName(), $this->securityContext->getRoles(), $this->userService->getBackendUser()?->getId());
             $workspace = $contentRepository->findWorkspaceByName($usage->getWorkspaceName());
 
-            $inaccessibleRelation['label'] = $workspace && $this->getLabelForInaccessibleWorkspace($workspace);
             $inaccessibleRelation['nodeIdentifier'] = $usage->getNodeAggregateId()->value;
-            $inaccessibleRelation['workspaceName'] = $usage->getWorkspaceName()->value;
+            $inaccessibleRelation['workspaceName'] = $workspace->workspaceName->value;
             $inaccessibleRelation['workspace'] = $workspace;
+            $inaccessibleRelation['relevantWorkspaceMetadata'] = $this->getRelevantMetadataFromInaccessibleWorkspace($workspace);
             $inaccessibleRelation['nodeType'] = $nodeType;
             $inaccessibleRelation['accessible'] = $workspacePermissions->read;
 
@@ -181,6 +198,7 @@ class UsageController extends ActionController
             $relatedNodes[$site->getNodeName()->value]['nodes'][] = [
                 'node' => $node,
                 'workspace' => $workspace,
+                'workspaceMetadata' => $this->workspaceService->getWorkspaceMetadata($contentRepository->id, $workspace->workspaceName),
                 'documentNode' => $documentNode
             ];
         }
@@ -196,24 +214,55 @@ class UsageController extends ActionController
         ]);
     }
 
-    private function getLabelForInaccessibleWorkspace(Workspace $workspace): string
+    /**
+     * @return array{title: WorkspaceTitle, owner: User, personalWorkspace: bool, privateWorkspace: bool}
+     */
+    private function getRelevantMetadataFromInaccessibleWorkspace(?Workspace $workspace): array
     {
-        /*
-        TODO: Needs to get re-implemented for Neos 9.
-              See: https://github.com/neos/neos-development-collection/pull/5182
+        $structuredReturn = [
+            'title' => '',
+            'owner' => '',
+            'personalWorkspace' => false,
+            'privateWorkspace' => false,
+        ];
+
+        if ($workspace === null) {
+            return $structuredReturn;
+        }
 
         $currentAccount = $this->securityContext->getAccount();
 
         if ($currentAccount != null && $this->privilegeManager->isPrivilegeTargetGranted('Neos.Media.Browser:WorkspaceName')) {
-            if ($workspace->isPrivateWorkspace()) {
-                $owner = $workspace->getOwner();
-                return '(' . $owner->getLabel() . ')';
+            $contentRepositoryId = SiteDetectionResult::fromRequest($this->request->getHttpRequest())->contentRepositoryId;
+            $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+
+            $workspaceMetadata = $this->workspaceService->getWorkspaceMetadata($contentRepository->id, $workspace->workspaceName);
+            $workspaceOwner = $workspaceMetadata->ownerUserId
+                ? $this->domainUserService->findUserById($workspaceMetadata->ownerUserId)
+                : null;
+
+            $roleAssignments = $this->workspaceService->getWorkspaceRoleAssignments(
+                $contentRepositoryId,
+                $workspace->workspaceName
+            );
+            $relatedUser = null;
+            foreach ($roleAssignments as $roleAssignment) {
+                if (($roleAssignment->role->value !== WorkspaceRole::VIEWER->value) && ($roleAssignment->subject->type->value === WorkspaceRoleSubjectType::USER->value)) {
+                    $relatedUser = $this->domainUserService->findUserById(UserId::fromString($roleAssignment->subject->value));
+                    break;
+                }
+            }
+
+            if ($workspaceMetadata->classification->value === WorkspaceClassification::PERSONAL->value) {
+                $structuredReturn['owner'] = $workspaceOwner;
+                $structuredReturn['personalWorkspace'] = true;
             } else {
-                return '(' . $workspace->getTitle() . ')';
+                $structuredReturn['title'] = $workspaceMetadata->title;
+                $structuredReturn['owner'] = $relatedUser;
+                $structuredReturn['privateWorkspace'] = true;
             }
         }
-        */
 
-        return '';
+        return $structuredReturn;
     }
 }
