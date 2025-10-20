@@ -258,11 +258,11 @@ class UsageController extends ActionController
             }
 
             if ($workspaceMetadata->classification->value === WorkspaceClassification::PERSONAL->value) {
-                $structuredReturn['relatedUserName'] = $workspaceOwner->getLabel();
+                $structuredReturn['relatedUserName'] = $workspaceOwner?->getLabel();
                 $structuredReturn['personalWorkspace'] = true;
             } else {
                 $structuredReturn['title'] = $workspaceMetadata->title;
-                $structuredReturn['relatedUserName'] = $relatedUser->getLabel();
+                $structuredReturn['relatedUserName'] = $relatedUser?->getLabel();
                 $structuredReturn['privateWorkspace'] = true;
             }
         }
