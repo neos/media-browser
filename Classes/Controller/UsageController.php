@@ -14,6 +14,7 @@ namespace Neos\Media\Browser\Controller;
  * source code.
  */
 
+use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindClosestNodeFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Exception\WorkspaceDoesNotExist;
@@ -152,7 +153,7 @@ class UsageController extends ActionController
 
             $inaccessibleRelation['nodeIdentifier'] = $usage->getNodeAggregateId()->value;
             $inaccessibleRelation['workspace'] = $workspace;
-            $inaccessibleRelation['relevantWorkspaceMetadata'] = $this->getRelevantMetadataFromInaccessibleWorkspace($workspace);
+            $inaccessibleRelation['relevantWorkspaceMetadata'] = $this->getRelevantMetadataFromInaccessibleWorkspace($workspace, $contentRepository);
             $inaccessibleRelation['nodeType'] = $nodeType;
             $inaccessibleRelation['accessible'] = $workspacePermissions->read;
 
@@ -221,13 +222,13 @@ class UsageController extends ActionController
     }
 
     /**
-     * @return array{title: WorkspaceTitle|null, owner: User|null, personalWorkspace: bool, privateWorkspace: bool}
+     * @return array{title: WorkspaceTitle|null, relatedUserName: string, personalWorkspace: bool, privateWorkspace: bool}
      */
-    private function getRelevantMetadataFromInaccessibleWorkspace(?Workspace $workspace): array
+    private function getRelevantMetadataFromInaccessibleWorkspace(?Workspace $workspace, ?ContentRepository $contentRepository): array
     {
         $structuredReturn = [
             'title' => null,
-            'owner' => null,
+            'relatedUserName' => '',
             'personalWorkspace' => false,
             'privateWorkspace' => false,
         ];
@@ -238,17 +239,14 @@ class UsageController extends ActionController
 
         $currentAccount = $this->securityContext->getAccount();
 
-        if ($currentAccount != null && $this->privilegeManager->isPrivilegeTargetGranted('Neos.Media.Browser:WorkspaceName')) {
-            $contentRepositoryId = SiteDetectionResult::fromRequest($this->request->getHttpRequest())->contentRepositoryId;
-            $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
-
+        if ($currentAccount != null && $contentRepository != null && $this->privilegeManager->isPrivilegeTargetGranted('Neos.Media.Browser:WorkspaceName')) {
             $workspaceMetadata = $this->workspaceService->getWorkspaceMetadata($contentRepository->id, $workspace->workspaceName);
             $workspaceOwner = $workspaceMetadata->ownerUserId
                 ? $this->domainUserService->findUserById($workspaceMetadata->ownerUserId)
                 : null;
 
             $roleAssignments = $this->workspaceService->getWorkspaceRoleAssignments(
-                $contentRepositoryId,
+                $contentRepository->id,
                 $workspace->workspaceName
             );
             $relatedUser = null;
@@ -260,11 +258,11 @@ class UsageController extends ActionController
             }
 
             if ($workspaceMetadata->classification->value === WorkspaceClassification::PERSONAL->value) {
-                $structuredReturn['owner'] = $workspaceOwner;
+                $structuredReturn['relatedUserName'] = $workspaceOwner->getLabel();
                 $structuredReturn['personalWorkspace'] = true;
             } else {
                 $structuredReturn['title'] = $workspaceMetadata->title;
-                $structuredReturn['owner'] = $relatedUser;
+                $structuredReturn['relatedUserName'] = $relatedUser->getLabel();
                 $structuredReturn['privateWorkspace'] = true;
             }
         }
