@@ -222,7 +222,7 @@ class UsageController extends ActionController
     }
 
     /**
-     * @return array{title: WorkspaceTitle|null, relatedUserName: string, personalWorkspace: bool, privateWorkspace: bool}
+     * @return array{title: WorkspaceTitle|null, relatedUserName: string|null, personalWorkspace: bool, privateWorkspace: bool}
      */
     private function getRelevantMetadataFromInaccessibleWorkspace(?Workspace $workspace, ?ContentRepository $contentRepository): array
     {
