@@ -8,7 +8,6 @@
 		var url = $(wrapper).attr('data-asset-preview-url');
 
 		function renderPdfWithLib(pdfjsLib) {
-			pdfjsLib.GlobalWorkerOptions.workerSrc = '/_Resources/Static/Packages/Neos.Media.Browser/JavaScript/pdf.worker.mjs';
 			pdfjsLib.getDocument(url).promise.then(function (pdfDoc_) {
 				pdfDoc = pdfDoc_;
 				document.getElementById('neos-preview-pdf-page-count').innerHTML = pdfDoc.numPages;

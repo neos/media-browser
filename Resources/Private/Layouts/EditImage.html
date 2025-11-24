@@ -17,9 +17,10 @@
 		<f:render partial="FlashMessages"/>
 	</div>
 	<f:render section="Content"/>
+	<script src="{f:uri.resource(path: 'resource://Neos.Media.Browser/Public/JavaScript/pdf.mjs')}" type="module"></script>
 	<script type="module">
-		import pdfjsLib from '{f:uri.resource(path: "resource://Neos.Media.Browser/Public/JavaScript/pdf.mjs")}';
-		window.pdfjsLib = pdfjsLib;
+		var { pdfjsLib } = globalThis;
+		pdfjsLib.GlobalWorkerOptions.workerSrc = "{f:uri.resource(path: 'resource://Neos.Media.Browser/Public/JavaScript/pdf.worker.mjs')}";
 		window.dispatchEvent(new Event('pdfjslibready'));
 	</script>
 	<f:for each="{settings.scripts}" as="script">
